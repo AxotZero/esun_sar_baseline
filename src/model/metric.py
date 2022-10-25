@@ -1,10 +1,23 @@
-from pdb import set_trace
+from pdb import set_trace as bp
 
 import torch
 import numpy as np
 import torch.nn.functional as F
 
 from constant import target_indices, logs
+
+
+def recall_n(output, target):
+    comb = list(zip(output, target))
+    comb.sort(key=lambda x:x[0])
+    flag = False
+    for i, (out, gt) in enumerate(comb):
+        if gt == 1:
+            if flag:
+                break
+            flag = True
+
+    return (sum(target)-1) / (len(target)-i)
 
 
 def rmse(output, target):

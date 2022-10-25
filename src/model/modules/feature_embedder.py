@@ -1,5 +1,5 @@
 from operator import ge
-from pdb import set_trace
+from pdb import set_trace as bp
 
 import torch
 import torch.nn as nn
@@ -105,34 +105,30 @@ class FeatureEmbedder(torch.nn.Module):
     src: tabnet
     """
 
-    def __init__(self, num_cat_dict, data_source, emb_feat_dim=32, hidden_size=128, hidden_size_coeff=6):
+    def __init__(self, num_cat_dict, data_source, emb_feat_dim=32, hidden_size=128, hidden_size_coeff=6, dropout=0.2):
         """This is an embedding module for an entire set of features
         Parameters
         ----------
-        input_dim : int
-            Number of features coming as input (number of columns)
-        cat_dims : list of int
-            Number of modalities for each categorial features
-            If the list is empty, no embeddings will be done
-        cat_idxs : list of int
-            Positional index for each categorical features in inputs
         """
         super().__init__()
-        feats_name = get_feats_name(data_source)
+        feats_name = get_feats_name(CONFIG_MAP[data_source])
         feats_type = [getattr(CONFIG_MAP[data_source], name) for name in feats_name]
         self.feats_type = feats_type
 
-        self.source_type_embedding = nn.Parameters(torch.randn(hidden_size))
+        self.source_type_embedding = nn.Parameter(torch.randn(hidden_size))
         self.embeddings = torch.nn.ModuleList(
             [   
-                nn.Linear(1, emb_feat_dim) if feats_type == FeatureType.NUMERICAL
+                nn.Linear(1, emb_feat_dim) if feat_type == FeatureType.NUMERICAL
                 else nn.Embedding(num_cat_dict[data_source][feat_name], emb_feat_dim)
                 for feat_name, feat_type in zip(feats_name, feats_type)
             ]
         )
-
-
-        self.encoder = CnnEncoder(num_features=0, num_targets=hidden_size, hidden_size=hidden_size*hidden_size_coeff)
+        self.encoder = CnnEncoder(
+            num_features=len(feats_name)*emb_feat_dim, 
+            num_targets=hidden_size, 
+            hidden_size=hidden_size*hidden_size_coeff,
+            dropout=dropout
+        )
 
 
     def forward(self, x):
@@ -141,30 +137,15 @@ class FeatureEmbedder(torch.nn.Module):
         Inputs should be (batch_size, input_dim)
         Outputs will be of size (batch_size, self.post_embed_dim)
         """
-        
-        cols = []
-        cat_feat_counter = 0
-        num_feat_counter = 0
-        batch_size = x.size()[0]
-        for feat_init_idx, is_continuous in enumerate(self.continuous_idx):
+        embs = []
+        for i, (feat_type, emb_layer)  in enumerate(zip(self.feats_type, self.embeddings)):
             # Enumerate through continuous idx boolean mask to apply embeddings
-            if is_continuous:
-                cols.append(
-                    self.nns[num_feat_counter](x[:, feat_init_idx].view(-1, 1).float())
-                )
-                num_feat_counter += 1
+            inputs = x[:, i]
+            if feat_type == FeatureType.NUMERICAL:
+                inputs = inputs.view(-1, 1).float()
             else:
-                cols.append(
-                    self.embeddings[cat_feat_counter](x[:, feat_init_idx].long())
-                )
-                cat_feat_counter += 1
-
-            # mask features(exclueds shoptag, txn_cnt, txn_amt)
-            if self.training and self.mask_feat_ratio > 0 and feat_init_idx>2:
-                mask = torch.rand(batch_size) < self.mask_feat_ratio
-                cols[-1][mask] = 0
-        # concat
-        # set_trace()
-        post_embeddings = torch.cat(cols, dim=1)
-        return post_embeddings
-
+                inputs = inputs.long()
+            embs.append(emb_layer(inputs))
+        embs = torch.cat(embs, dim=1)
+        embs = self.encoder(embs)
+        return embs

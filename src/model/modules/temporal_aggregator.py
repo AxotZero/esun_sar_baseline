@@ -75,10 +75,9 @@ class TemporalGruAggregator(nn.Module):
             batch_first = True
         )
     def forward(self, x, mask):
-        x = x * ~(mask.unsqueeze(2))
+        x = x * (mask.unsqueeze(2))
         x, _ = self.gru(x)
-        last_indices = -torch.argmin(torch.flip(mask.type(torch.float), dims=(1,)), dim=1)-1
-        return x[range(x.size()[0]), last_indices]
+        return x
 
 
 class TemporalTransformerAggregator(nn.Module):

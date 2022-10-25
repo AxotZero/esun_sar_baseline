@@ -8,7 +8,7 @@ from .data_config import FeatureType
 
 def save_pickle(dic, save_path):
     with open(save_path, 'wb') as f:
-        pickle.dump(dic, f)
+        pickle.dump(dic, f, protocol=4)
 
 
 def load_pickle(load_path):
@@ -42,7 +42,7 @@ def load_json(fp):
         return json.loads(f.read())
 
 
-@lru_cache
+@lru_cache(None)
 def get_feats_name(config):
     input_feats = []
     for name, _type in inspect.getmembers(config):

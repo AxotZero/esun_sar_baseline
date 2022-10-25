@@ -2,32 +2,33 @@
     "name": "PetPoc",
     "n_gpu": 1,
     "arch": {
-        "type": "MultiIndexModelNNBn",
+        "type": "SarModel",
         "args": {
-            "cols_config_path": "../data/preprocessed/v2_pct/column_config.yml",
+            "num_cat_pkl_path": "/media/hd03/axot_data/sar/data/num_cat_dict.yml",
             "emb_feat_dim": 32,
-            "mask_row_ratio": 0,
-            "mask_feat_ratio": 0,
-            "dropout": 0.4,
-            "hidden_size": 192,
-            "temporal_aggregator_type": "Seq2SeqGruAggregator",
+            "hidden_size": 128,
+            "hidden_size_coeff": 6,
+            "dropout": 0.2,
+            "temporal_aggregator_type": "TemporalGruAggregator",
             "temporal_aggregator_args": {
-                "input_size": 192,
+                "input_size": 128,
                 "hidden_size": 384,
                 "num_layers": 3,
-                "dropout": 0.35
+                "dropout": 0.2
             }
         }
     },
     "data_loader": {
-        "type": "MultiIndexDataLoader",
+        "type": "MaxLenDataLoader",
         "args": {
-            "data_path": "../md01_data/customers_pct.pkl",
-            "batch_size": 1024,
+            "data_path": "/media/hd03/axot_data/sar/data/cust_data.pkl",
+            "max_len": 512,
+            "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.2,
-            "num_workers": 1,
-            "fold_idx": 0
+            "num_workers": 4,
+            "fold_idx": 0,
+            "training": true
         }
     },
     "optimizer": {
@@ -37,18 +38,18 @@
             "weight_decay": 1e-05
         }
     },
-    "loss": "seq2seq_soft_ce",
+    "loss": "weighted_bce_loss",
     "metrics": [
-        "seq2seq_NDCG",
-        "seq2seq_NDCG16"
+        "recall_n"
     ],
     "trainer": {
         "epochs": 100,
-        "save_dir": "../save_dir/mm_nnbn_h256_test",
+        "save_dir": "../save_dir/test",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",
         "early_stop": 4,
+        "training": true,
         "tensorboard": false
     }
 }
