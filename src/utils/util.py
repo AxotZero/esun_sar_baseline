@@ -71,3 +71,12 @@ def to_device(data, device):
     if isinstance(data, tuple) or isinstance(data, list):
         return [d.to(device) for d in data]
     return data.to(device)
+
+def to_device(x, device, training=True):
+    (b_idx, s_idx, data, target) = x
+    return [
+        [b.to(device) for b in b_idx],
+        [s.to(device) for s in s_idx],
+        [d.to(device) for d in data],
+        target.to(device) if training else target
+    ]

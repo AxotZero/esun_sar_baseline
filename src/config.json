@@ -7,14 +7,14 @@
             "num_cat_pkl_path": "/media/hd03/axot_data/sar/data/num_cat_dict.yml",
             "emb_feat_dim": 32,
             "hidden_size": 128,
-            "hidden_size_coeff": 6,
-            "dropout": 0.2,
+            "hidden_size_coeff": 4,
+            "dropout": 0.4,
             "temporal_aggregator_type": "TemporalGruAggregator",
             "temporal_aggregator_args": {
                 "input_size": 128,
                 "hidden_size": 384,
                 "num_layers": 3,
-                "dropout": 0.2
+                "dropout": 0.3
             }
         }
     },
@@ -23,7 +23,7 @@
         "args": {
             "data_path": "/media/hd03/axot_data/sar/data/cust_data.pkl",
             "max_len": 512,
-            "batch_size": 128,
+            "batch_size": 192,
             "shuffle": true,
             "validation_split": 0.2,
             "num_workers": 4,
@@ -44,7 +44,7 @@
     ],
     "trainer": {
         "epochs": 100,
-        "save_dir": "../save_dir/test",
+        "save_dir": "../save_dir/baseline",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",

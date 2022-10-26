@@ -6,7 +6,6 @@ import numpy as np
 import math
 import pandas as pd
 
-from constant import target_indices
 
 
 def softmax(x):

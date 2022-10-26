@@ -148,4 +148,5 @@ class FeatureEmbedder(torch.nn.Module):
             embs.append(emb_layer(inputs))
         embs = torch.cat(embs, dim=1)
         embs = self.encoder(embs)
+        embs += self.source_type_embedding
         return embs

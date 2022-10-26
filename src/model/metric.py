@@ -4,7 +4,6 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 
-from constant import target_indices, logs
 
 
 def recall_n(output, target):

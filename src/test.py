@@ -11,10 +11,38 @@ import data_loader.data_loaders as module_data
 import model.model as module_arch
 from parse_config import ConfigParser
 from utils import to_device
-from constant import target_indices
 
 
-def main(config, output_type='top3_indices', output_dir='./submission.csv'):
+def run_test_of_single_fold(config, output_dir, fold_idx, data_loader):
+    print(f'=== run fold {fold_idx} ===')
+
+    # load model
+    model = config.init_obj('arch', module_arch)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model_path = f'{output_dir}/fold{fold_idx}/model_best.pth'
+    print(f'load checkpoint from {model_path}')
+    checkpoint = torch.load(model_path, map_location=device)
+    state_dict = checkpoint['state_dict']
+    if config['n_gpu'] > 1:
+        model = torch.nn.DataParallel(model)
+    model.load_state_dict(state_dict)
+    model = model.to(device)
+    model.eval()
+
+    ret = {}
+
+    for batch_idx, batch in tqdm(enumerate(data_loader)):
+        b_idx, s_idx, data, alert_keys = to_device(batch, device=device, training=False)
+
+        outputs = model(b_idx, s_idx, data)
+        outputs = outputs.detach().cpu().numpy().tolist()
+        for alert_key, output in zip(alert_keys, outputs):
+            ret[alert_key] = output
+
+    return ret
+
+
+def main(config, output_dir, num_fold=5):
     logger = config.get_logger('test')
 
     # setup data_loader instances
@@ -27,50 +55,34 @@ def main(config, output_type='top3_indices', output_dir='./submission.csv'):
         **config['data_loader']['args'],
     )
 
-    # build model architecture
-    model = config.init_obj('arch', module_arch)
-    logger.info(model)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    logger.info('Loading checkpoint: {} ...'.format(config.resume))
-    checkpoint = torch.load(config.resume, map_location=device)
-    state_dict = checkpoint['state_dict']
-    if config['n_gpu'] > 1:
-        model = torch.nn.DataParallel(model)
-    model.load_state_dict(state_dict)
-
-    # prepare model for testing
-    model = model.to(device)
-    model.eval()
-
-    outputs_logits = []
-    outputs_top3 = []
-    chids = []
-    with torch.no_grad():
-        for i, (data, chid) in enumerate(tqdm(data_loader)):
-            output = model(to_device(data, device))
-            if len(output.size()) >= 3:
-                output = output[:, -1]
-
-            output = output[:, target_indices]
-            _, output_topk_indices = torch.topk(output, 3, dim=1)
-
-            chids.append(chid.cpu().detach().numpy())
-            outputs_logits.append(output.cpu().detach().numpy())
-            outputs_top3.append(target_indices[output_topk_indices.cpu().detach().numpy().astype(int)]+1)
-
-    chids = np.concatenate(chids, axis=0).reshape(-1, 1).astype(int)
-    outputs_logits = np.concatenate(outputs_logits, axis=0).astype(float)
-    outputs_top3 = np.concatenate(outputs_top3, axis=0).astype(int)
-    # bp()
-    pd.DataFrame(
-        data=np.concatenate([chids, outputs_top3], axis=1),
-        columns=['chid', 'top1', 'top2', 'top3']).astype(str).to_csv(f'{output_dir}/outputs_top3.csv', index=None)
-    pd.DataFrame(
-        data=np.concatenate([chids, outputs_logits], axis=1),
-        columns=['chid']+list(range(16))).astype(str).to_csv(f'{output_dir}/outputs_logits.csv', index=None)
+    # get output of 5fold
+    outputs = {}
+    for fold_idx in range(num_fold):
+        out = run_test_of_single_fold(config, output_dir, fold_idx, data_loader)
+        for k, v in out.items():
+            if k not in outputs:
+                outputs[k] = []
+            outputs[k].append(v)
     
+    # mean
+    for k, v in outputs.items():
+        outputs[k] = sum(v) / num_fold
+    
+    # generate submission
+    all_alert_keys = pd.read_csv('/media/hd03/axot_data/sar/data/sample_submission.csv').alert_key
+    for alert_key in all_alert_keys:
+        if alert_key not in outputs:
+            outputs[alert_key] = 0
+    
+    submit = pd.DataFrame(
+        data={
+            'alert_key': list(outputs.keys()), 
+            'probability': list(outputs.values())
+        }
+    )
 
+    submit.sort_values(by='probability', inplace=True)
+    submit.to_csv(f'{output_dir}/submission.csv', index=None)
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
@@ -90,4 +102,4 @@ if __name__ == '__main__':
 
     output_type = args.output_type
     output_dir = args.output_dir
-    main(config, output_type, output_dir)
+    main(config, output_dir)

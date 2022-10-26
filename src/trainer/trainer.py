@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 
 from base import BaseTrainer
-from utils import inf_loop, MetricTracker
+from utils import inf_loop, MetricTracker, to_device
 from model.metric import recall_n
 
 
@@ -35,14 +35,14 @@ class Trainer(BaseTrainer):
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
 
-    def to_device(self, x, training=True):
-        (b_idx, s_idx, data, target) = x
-        return [
-            [b.to(self.device) for b in b_idx],
-            [s.to(self.device) for s in s_idx],
-            [d.to(self.device) for d in data],
-            target.to(self.device) if training else target
-        ]
+    # def to_device(self, x, training=True):
+    #     (b_idx, s_idx, data, target) = x
+    #     return [
+    #         [b.to(self.device) for b in b_idx],
+    #         [s.to(self.device) for s in s_idx],
+    #         [d.to(self.device) for d in data],
+    #         target.to(self.device) if training else target
+    #     ]
 
     def _train_epoch(self, epoch):
         """
@@ -58,7 +58,7 @@ class Trainer(BaseTrainer):
             outputs = []
             for batch_idx, (batch) in enumerate(self.data_loader):
                 # data, target = to_device(data, self.device), to_device(target, self.device)
-                b_idx, s_idx, data, target = self.to_device(batch)
+                b_idx, s_idx, data, target = to_device(batch, device=self.device, training=True)
                 self.optimizer.zero_grad()
                 output = self.model(b_idx, s_idx, data)
                 loss = self.criterion(output, target)
@@ -110,7 +110,7 @@ class Trainer(BaseTrainer):
             targets = []
             outputs = []
             for batch_idx, (batch) in enumerate(self.valid_data_loader):
-                b_idx, s_idx, data, target = self.to_device(batch)
+                b_idx, s_idx, data, target = to_device(batch, device=self.device, training=True)
 
                 output = self.model(b_idx, s_idx, data)
                 loss = self.criterion(output, target)
