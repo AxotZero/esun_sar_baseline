@@ -100,6 +100,7 @@ if __name__ == '__main__':
     config = ConfigParser.from_args(args, test=True)
     args = args.parse_args()
 
+    print(f'run test for {args.output_dir}')
     output_type = args.output_type
     output_dir = args.output_dir
     main(config, output_dir)

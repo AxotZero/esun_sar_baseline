@@ -65,7 +65,7 @@ class CUSTINFOConfig:
     total_asset = FeatureType.NUMERICAL
     AGE = FeatureType.CATEGORICAL
     date = FeatureType.DATE
-    sar_flag = FeatureType.TARGET
+    sar_flag = FeatureType.CATEGORICAL
 
 
 CONFIG_MAP = {

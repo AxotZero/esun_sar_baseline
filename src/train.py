@@ -30,7 +30,7 @@ def main(config):
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
-    logger.info(model)
+    # logger.info(model)
 
     
     # setup data_loader instances

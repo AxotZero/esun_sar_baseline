@@ -9,10 +9,9 @@
             "hidden_size": 128,
             "hidden_size_coeff": 4,
             "dropout": 0.4,
-            "temporal_aggregator_type": "TemporalGruAggregator",
+            "temporal_aggregator_type": "TemporalDebertaAggregator",
             "temporal_aggregator_args": {
-                "input_size": 128,
-                "hidden_size": 384,
+                "hidden_size": 128,
                 "num_layers": 3,
                 "dropout": 0.3
             }
@@ -23,10 +22,10 @@
         "args": {
             "data_path": "/media/hd03/axot_data/sar/data/cust_data.pkl",
             "max_len": 512,
-            "batch_size": 192,
+            "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.2,
-            "num_workers": 4,
+            "num_workers": 0,
             "fold_idx": 0,
             "training": true
         }
@@ -38,7 +37,7 @@
             "weight_decay": 1e-05
         }
     },
-    "loss": "weighted_bce_loss",
+    "loss": "cost_sensetive_bce_loss",
     "metrics": [
         "recall_n"
     ],

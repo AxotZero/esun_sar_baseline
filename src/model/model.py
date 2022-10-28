@@ -52,9 +52,7 @@ class SarModel(BaseModel):
             mask[bi, si] = 1
 
         # run temporal model
-        output_idx = mask.sum(axis=1) - 1
         x = self.temporal_aggregator(_x, mask)
-        x = x[list(range(batch_size)), output_idx]
         x = self.classifier(x).squeeze(-1)
         return x
 

@@ -66,11 +66,12 @@ class MaxLenDataLoader(BaseDataLoader):
         def get_source_data(self, datas, sources, source_type):
             ret = []
             config = CONFIG_MAP[source_type]
+            max_seq_idx = len(sources) - 1
             feats_name = get_feats_name(config)
             for seq_idx, (source, data) in enumerate(zip(sources, datas)):
                 if source != source_type:
                     continue
-                d = [data[feat_name] for feat_name in feats_name]
+                d = [data[feat_name] if not(max_seq_idx == seq_idx and feat_name=='sar_flag') else 2 for feat_name in feats_name]
                 ret.append((seq_idx, d))
             return ret
                 
@@ -85,6 +86,7 @@ class MaxLenDataLoader(BaseDataLoader):
                 y = cust_data[-1].sar_flag
             else:
                 y = cust_data[-1].alert_key
+            # cust_data[-1].sar_flag = 0.5
             return [x, y]
             
 
