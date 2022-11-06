@@ -1,0 +1,19 @@
+1:
+  country: 128
+  cur_type: 51
+2:
+  ATM: 2
+  cross_bank: 2
+  debit_credit: 2
+  fiscTxId: 30
+  info_asset_code: 22
+  tx_time: 24
+  tx_type: 3
+  txbranch: 350
+3:
+  trans_no: 5
+4:
+  AGE: 11
+  occupation_code: 22
+  risk_rank: 4
+  sar_flag: 3
