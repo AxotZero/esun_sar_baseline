@@ -30,6 +30,9 @@ class Trainer(BaseTrainer):
         self.do_validation = self.valid_data_loader is not None
         self.lr_scheduler = lr_scheduler
         self.log_step = int(np.sqrt(data_loader.batch_size))
+        
+        bs = data_loader.batch_size
+        self.accumulation_step = 1 if bs > 256 else np.ceil(256/bs)
 
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
@@ -56,6 +59,7 @@ class Trainer(BaseTrainer):
         with tqdm(total=self.len_epoch) as pbar:
             targets = []
             outputs = []
+            last_batch_idx = len(self.data_loader)
             for batch_idx, (batch) in enumerate(self.data_loader):
                 # data, target = to_device(data, self.device), to_device(target, self.device)
                 b_idx, s_idx, data, target = to_device(batch, device=self.device, training=True)
@@ -63,7 +67,7 @@ class Trainer(BaseTrainer):
                 output = self.model(b_idx, s_idx, data)
                 loss = self.criterion(output, target)
                 loss.backward()
-                self.optimizer.step()
+                
 
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
                 self.train_metrics.update('loss', loss.item())
@@ -74,8 +78,10 @@ class Trainer(BaseTrainer):
                     f"Train Epoch: {epoch} Loss: {loss.item():.6f}"
                 )
 
-                torch.cuda.empty_cache()
-                self.optimizer.zero_grad()
+                if (batch_idx+1) % self.accumulation_step == 0 or batch_idx == last_batch_idx:
+                    self.optimizer.step()
+                    torch.cuda.empty_cache()
+                    self.optimizer.zero_grad()
 
                 pbar.update()
                 

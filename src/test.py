@@ -80,7 +80,7 @@ def main(config, output_dir, num_fold=5):
             'probability': list(outputs.values())
         }
     )
-
+    submit['alery_keys'] = submit['alery_keys'].astype(int)
     submit.sort_values(by='probability', inplace=True)
     submit.to_csv(f'{output_dir}/submission.csv', index=None)
 
