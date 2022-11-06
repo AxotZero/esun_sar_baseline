@@ -17,10 +17,4 @@ def cost_sensetive_bce_loss(output, target, epsilon=1e-7, w_tp=99, w_tn=0, w_fp=
     tp = w_tp * torch.mean(target * torch.log((1-output)+epsilon))
     fp = w_fp * torch.mean((1-target) * torch.log((1-output)+epsilon))
     tn = w_tn * torch.mean((1-target) * torch.log(output+epsilon))
-
-    # cost = y_true * K.log(y_pred) * w_fn + 
-    #         y_true * K.log(1 - y_pred) * w_tp) +
-    #         (1 - y_true) * K.log(1 - y_pred) * w_fp +
-    #         (1 - y_true) * K.log(y_pred) * w_tn)
-    # return - K.mean(cost, axis=-1)
     return -(fn+tp+fp+tn)

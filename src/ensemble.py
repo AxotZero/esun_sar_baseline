@@ -1,10 +1,6 @@
 import pandas as pd
 
-folders = [
-    '/media/hd03/axot_data/sar/save_dir/deberta',
-    '/media/hd03/axot_data/sar/save_dir/bigger2',
-    '/media/hd03/axot_data/sar/save_dir/sar_flag_categorical1024'
-]
+folders = []
 
 n_folder = len(folders)
 outputs = {}
